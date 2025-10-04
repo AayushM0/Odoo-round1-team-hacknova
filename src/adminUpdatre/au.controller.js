@@ -70,12 +70,10 @@ export async function addEmployee(req, res) {
         ];
 
         
-        const result = await client.query(sql, values); // Use client for insertion
+        const result = await client.query(sql, values);
         const newEmployeeId = result.rows[0].employee_id;
 
 
-        // --- LOG THE GENERATED PASSWORD TO FILE (Replaces Email) ---
-        // CRITICAL FIX: AWAIT the file operation to ensure it completes before response is sent.
         await logPasswordToFile(name, email, randomPassword) 
             .catch(err => console.error("Warning: Failed to log password to file:", err));
 
@@ -89,14 +87,14 @@ export async function addEmployee(req, res) {
     } catch (error) {
         console.error('Error adding employee:', error);
         
-        // Postgres unique violation code
+
         if (error.code === '23505') { 
             return res.status(409).json({ error: 'Email address already in use.' });
         }
         res.status(500).json({ error: 'Failed to add employee due to a server error.', detail: error.message });
         
     } finally {
-        // CRITICAL: Ensure the client is released back to the pool
+
         if (client) {
             client.release();
         }
@@ -106,8 +104,7 @@ export async function addEmployee(req, res) {
 import fs from 'fs/promises';
 import path from 'path';
 
-// Define the file path where passwords will be logged. 
-// This creates a file named 'new_employee_passwords.txt' in the project root.
+
 const LOG_FILE_PATH = path.join(process.cwd(), 'new_employee_passwords.txt');
 
 /**
@@ -127,7 +124,7 @@ export async function logPasswordToFile(name, email, password) {
                      `----------------------------\n`;
 
     try {
-        // Use fs.appendFile to safely add content to the end of the file
+
         await fs.appendFile(LOG_FILE_PATH, logEntry);
         console.log(`\n--- PASSWORD LOGGED ---`);
         console.log(`Password for ${name} logged to: ${LOG_FILE_PATH}`);
